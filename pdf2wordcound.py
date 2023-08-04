@@ -5,6 +5,27 @@ from PyPDF2 import PdfReader
 from flask import Flask, request, jsonify
 import fitz
 import logging
+from langdetect import detect
+
+def detect_language(text):
+    try:
+        return detect(text)
+    except:
+        return "unknown"
+
+def calculate_language_percentages(text):
+    languages = {}
+    total_characters = len(text)
+    
+    for char in text:
+        lang = detect_language(char)
+        if lang in languages:
+            languages[lang] += 1
+        else:
+            languages[lang] = 1
+    
+    language_percentages = {lang: (count / total_characters) * 100 for lang, count in languages.items()}
+    return language_percentages
 
 #log 관련 설정
 if not os.path.isdir('logs'):
@@ -17,6 +38,16 @@ logging.basicConfig(filename = "logs/server.log", level = logging.DEBUG
 
 app = Flask(__name__)
 
+def quarter_text(pdf_file):
+    text = ""
+    pdf_document = fitz.open(pdf_file)
+    for page_num in range(int(pdf_document.page_count/4)):
+        page = pdf_document[page_num]
+        text += page.get_text()
+    pdf_document.close()
+    return text
+
+
 def count_words(pdf_file):
     word_count = 0
     pdf_document = fitz.open(pdf_file)
@@ -27,7 +58,6 @@ def count_words(pdf_file):
     pdf_document.close()
     return word_count
 
-
 def count_pictures(pdf_file):
     picture_count = 0
     pdf_document = fitz.open(pdf_file)
@@ -37,7 +67,6 @@ def count_pictures(pdf_file):
         picture_count += len(images)
     pdf_document.close()
     return picture_count
-
 
 @app.route("/getPDFInfomation", methods=["POST"])
 def receive_and_save_pdf():
@@ -72,9 +101,22 @@ def receive_and_save_pdf():
     if not isinstance(dst_language, list):
         return jsonify({"error": 1, "message": "dst_language must be a List"}), 400
 
-
     word_count = count_words(file_path)
     picture_count = count_pictures(file_path)
+    text = quarter_text(file_path)
+
+    language_percentages = calculate_language_percentages(text)
+    # Sort language percentages in descending order
+    sorted_languages = sorted(language_percentages.items(), key=lambda x: x[1], reverse=True)
+
+    # Extract the language with the highest percentage
+    highest_language = sorted_languages[0][0]
+
+    # Create an array with sorted language percentages and their order
+    sorted_language_results = [{"Language": lang, "Percentage": percentage} for lang, percentage in sorted_languages]
+
+    print("sorted_language_results:", sorted_language_results)
+    print("Language with the Highest Percentage:", highest_language)
 
     return jsonify({
         "error": 0,

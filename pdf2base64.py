@@ -18,7 +18,7 @@ data = {
 }
 
 # Send the POST request using the requests library
-url = "http://ccdip.cafe24.com:5050/getPDFInfomation"
+url = "http://localhost:5050/getPDFInfomation"
 response = requests.post(url, json=data)
 
 # Check the response
