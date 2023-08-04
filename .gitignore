@@ -1,3 +1,9 @@
+#Custom
+output.pdf
+logs/
+file_path
+uploads/
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
