@@ -62,6 +62,30 @@ def count_words(pdf_file):
     pdf_document.close()
     return word_count
 
+def count_words_after_specific_words(pdf_file):
+    word_count_after = 0
+    pdf_document = fitz.open(pdf_file)
+    specific_words = ["발명의 명칭", "발명의 설명", "title of the invention"]
+    specific_word_found = False
+    
+    for page_num in range(pdf_document.page_count):
+        page = pdf_document[page_num]
+        text = page.get_text()
+        
+        if not specific_word_found:
+            for word in specific_words:
+                if word in text:
+                    specific_word_found = True
+                    text_after_word = text.split(word, 1)[1]  # Get the text after the first occurrence of the specific word
+                    word_count_after += len(text_after_word.split())
+                    break  # Break loop if any of the specific words is found
+    
+        elif specific_word_found:
+            word_count_after += len(text.split())
+    
+    pdf_document.close()
+    return word_count_after
+
 def count_pictures(pdf_file):
     picture_count = 0
     pdf_document = fitz.open(pdf_file)
@@ -98,8 +122,10 @@ def receive_and_save_pdf():
 
     word_count = count_words(file_path)
     picture_count = count_pictures(file_path)
+    word_count_after = count_words_after_specific_words(file_path)
     text = quarter_text(file_path)
-
+    print("full count : ", word_count)
+    print("word_count_after_word : ",word_count_after)
     # ######## laguage ratio ########## 나중에 고려 성능 이슈상 멀티 쓰레드 필요
     # language_percentages = calculate_language_percentages(text)
     # ## Sort language percentages in descending order
@@ -113,7 +139,7 @@ def receive_and_save_pdf():
         "error": 0,
         "message": "File received and saved successfully.",
         #"language_dectect":sorted_language_results,
-        "word_count": word_count,
+        "word_count": word_count_after,
         "picture_count": picture_count,
         "src_language": src_language,
         "dst_language": dst_language,
